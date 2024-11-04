@@ -1,0 +1,68 @@
+import streamlit as st
+import pandas as pd
+from io import BytesIO
+
+# Sample DataFrame (Use your actual data here or load from a CSV/Database) dg
+data = {
+    "emp_no": [456902, 537077, 723129, 783131, 851211],
+    "salutation": ["Mr.", "Mr.", "Mr.", "Mr.", "Mr."],
+    "first_name": ["Steve", "Steven", "Jim", "Corey", "Jim"],
+    "middle_name": ["A", "B", "C", "D", "E"],
+    "last_name": ["Manning", "Lee", "Murphy", "House", "Murphy"],
+    "full_name": ["Steve Manning", "Steven Lee", "Jim Murphy", "Corey House", "Jim Murphy"],
+    "display_name": ["Steve", "Steven", "Jim", "Corey", "Jim"],
+    "preferred_name": ["Steve", "Steve", "Jim", "Corey", "Jim"],
+    "gender": ["M", "M", "M", "M", "M"],
+    "ethnicity": ["White", "Asian", "Black", "Hispanic", "Other"],
+    "date_of_birth": ["1980-01-01", "1985-05-20", "1990-03-15", "1987-07-11", "1992-10-30"],
+    "worker_email": ["smanning@alnylam.com", "stlee@alnylam.com", "jimmurphy@alnylam.com", "chouse@alnylam.com", "jimurphy@alnylam.com"],
+    "status": ["Active", "Inactive", "Inactive", "Active", "Active"],
+    "hire_date": ["2023-11-14", "2023-11-14", "2023-11-21", "2023-12-01", "2023-11-21"],
+    "termination_date": ["2024-02-13", "", "2024-04-19", "", ""],
+    "job_title": ["Contractor"] * 5,
+    "manager_name": ["Kevin Harrington", "Connor Goodman", "Connor Goodman", "Connor Goodman", "Kevin Harrington"],
+    "work_location_name": ["Information Technology"] * 5,
+    # Additional columns here
+}
+
+# Convert to DataFrame
+df = pd.DataFrame(data)
+
+# Streamlit App Title
+st.title("Employee Dashboard")
+
+# Sidebar for selecting columns to display
+st.sidebar.header("Display Options")
+columns = st.sidebar.multiselect("Select columns to display:", df.columns.tolist(), default=df.columns.tolist())
+
+# Filter DataFrame based on selected columns
+df_selected = df[columns]
+
+# Sidebar search functionality
+st.sidebar.subheader("Search Options")
+search_column = st.sidebar.selectbox("Select column to search:", df_selected.columns)
+search_term = st.sidebar.text_input(f"Enter search term for {search_column}:")
+
+# Filter data based on search term
+if search_term:
+    df_selected = df_selected[df_selected[search_column].astype(str).str.contains(search_term, case=False)]
+
+# Display DataFrame
+st.subheader("Filtered Employee Data")
+st.dataframe(df_selected)
+
+# Download filtered data as Excel
+@st.cache_data
+def convert_df_to_excel(dataframe):
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        dataframe.to_excel(writer, index=False)
+    return output.getvalue()
+
+excel_data = convert_df_to_excel(df_selected)
+st.download_button(
+    label="Download data as Excel",
+    data=excel_data,
+    file_name="filtered_employee_data.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
